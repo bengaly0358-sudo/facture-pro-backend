@@ -17,6 +17,14 @@ app.use(express.json());
 // ============================
 // ROUTE TEST
 // ============================
+// Route ping
+app.get('/ping', (req, res) => {
+    res.json({
+        status: 'alive',
+        time: new Date().toISOString(),
+        message: 'Serveur actif ✅'
+    });
+});
 app.get('/', (req, res) => {
     res.json({
         status: 'ok',
@@ -274,3 +282,16 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`✅ Serveur démarré sur le port ${PORT}`);
 });
+
+// Garder le serveur éveillé
+const https = require('https');
+setInterval(() => {
+    https.get(
+        'https://facture-pro-backend.onrender.com/ping',
+        (res) => {
+            console.log('✅ Ping envoyé - Serveur actif');
+        }
+    ).on('error', (e) => {
+        console.log('⚠️ Ping échoué:', e.message);
+    });
+}, 14 * 60 * 1000); // toutes les 14 minutes
