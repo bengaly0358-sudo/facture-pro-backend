@@ -12,6 +12,9 @@ const groq = new Groq({
 app.use(cors());
 app.use(express.json());
 
+// Modèle IA actuel
+const MODEL = "llama3-70b-8192";
+
 // ============================
 // ROUTE PING
 // ============================
@@ -29,7 +32,8 @@ app.get('/ping', (req, res) => {
 app.get('/', (req, res) => {
     res.json({
         status: 'ok',
-        message: 'Facture Pro AI Backend 🤖'
+        message: 'Facture Pro AI Backend 🤖',
+        model: MODEL
     });
 });
 
@@ -43,7 +47,7 @@ app.post('/api/generer-description', async (req, res) => {
             return res.status(400).json({ error: 'Article requis' });
         }
         const completion = await groq.chat.completions.create({
-            model: "llama3-8b-8192",
+            model: MODEL,
             messages: [
                 {
                     role: "system",
@@ -62,7 +66,9 @@ app.post('/api/generer-description', async (req, res) => {
             temperature: 0.7,
             max_tokens: 150
         });
-        res.json({ description: completion.choices[0].message.content });
+        res.json({
+            description: completion.choices[0].message.content
+        });
     } catch (error) {
         console.error('Erreur:', error);
         res.status(500).json({ error: error.message });
@@ -79,7 +85,7 @@ app.post('/api/suggerer-prix', async (req, res) => {
             return res.status(400).json({ error: 'Article requis' });
         }
         const completion = await groq.chat.completions.create({
-            model: "llama3-8b-8192",
+            model: MODEL,
             messages: [
                 {
                     role: "system",
@@ -96,8 +102,11 @@ app.post('/api/suggerer-prix', async (req, res) => {
             temperature: 0.5,
             max_tokens: 20
         });
-        const prixTexte = completion.choices[0].message.content.trim();
-        const prix = parseFloat(prixTexte.replace(/[^0-9.]/g, ''));
+        const prixTexte =
+            completion.choices[0].message.content.trim();
+        const prix = parseFloat(
+            prixTexte.replace(/[^0-9.]/g, '')
+        );
         res.json({ prix: isNaN(prix) ? 0 : prix });
     } catch (error) {
         console.error('Erreur:', error);
@@ -110,9 +119,8 @@ app.post('/api/suggerer-prix', async (req, res) => {
 // ============================
 app.post('/api/analyser-facture', async (req, res) => {
     try {
-        const { facture } = req.body;
         const completion = await groq.chat.completions.create({
-            model: "llama3-8b-8192",
+            model: MODEL,
             messages: [
                 {
                     role: "system",
@@ -137,7 +145,9 @@ app.post('/api/analyser-facture', async (req, res) => {
             temperature: 0.7,
             max_tokens: 300
         });
-        res.json({ analyse: completion.choices[0].message.content });
+        res.json({
+            analyse: completion.choices[0].message.content
+        });
     } catch (error) {
         console.error('Erreur:', error);
         res.status(500).json({ error: error.message });
@@ -151,7 +161,7 @@ app.post('/api/generer-notes', async (req, res) => {
     try {
         const { client, total, devise } = req.body;
         const completion = await groq.chat.completions.create({
-            model: "llama3-8b-8192",
+            model: MODEL,
             messages: [
                 {
                     role: "system",
@@ -162,13 +172,16 @@ app.post('/api/generer-notes', async (req, res) => {
                 },
                 {
                     role: "user",
-                    content: `Notes pour facture de ${total} ${devise} pour ${client}`
+                    content: `Notes pour facture de
+                    ${total} ${devise} pour ${client}`
                 }
             ],
             temperature: 0.7,
             max_tokens: 150
         });
-        res.json({ notes: completion.choices[0].message.content });
+        res.json({
+            notes: completion.choices[0].message.content
+        });
     } catch (error) {
         console.error('Erreur:', error);
         res.status(500).json({ error: error.message });
@@ -182,30 +195,38 @@ app.post('/api/chat', async (req, res) => {
     try {
         const { message, historique } = req.body;
         if (!message) {
-            return res.status(400).json({ error: 'Message requis' });
+            return res.status(400).json({
+                error: 'Message requis'
+            });
         }
         const messages = [
             {
                 role: "system",
                 content: `Tu es l'assistant IA de Facture Pro.
-                Tu aides les utilisateurs à créer des factures.
+                Tu aides les utilisateurs à créer des factures
+                professionnelles.
                 Réponds TOUJOURS en français.
-                Sois amical et professionnel.`
+                Sois amical, professionnel et concis.`
             }
         ];
         if (historique && Array.isArray(historique)) {
             historique.forEach(msg => {
-                messages.push({ role: msg.role, content: msg.content });
+                messages.push({
+                    role: msg.role,
+                    content: msg.content
+                });
             });
         }
         messages.push({ role: "user", content: message });
         const completion = await groq.chat.completions.create({
-            model: "llama3-8b-8192",
+            model: MODEL,
             messages: messages,
             temperature: 0.8,
             max_tokens: 500
         });
-        res.json({ reponse: completion.choices[0].message.content });
+        res.json({
+            reponse: completion.choices[0].message.content
+        });
     } catch (error) {
         console.error('Erreur:', error);
         res.status(500).json({ error: error.message });
@@ -218,6 +239,7 @@ app.post('/api/chat', async (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`✅ Serveur démarré sur le port ${PORT}`);
+    console.log(`🤖 Modèle IA : ${MODEL}`);
 
     // Auto ping toutes les 14 minutes
     setInterval(() => {
