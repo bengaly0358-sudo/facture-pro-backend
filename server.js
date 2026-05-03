@@ -12,12 +12,8 @@ const groq = new Groq({
 app.use(cors());
 app.use(express.json());
 
-// Modèle IA actuel
-const MODEL = "llama3-70b-8192";
+const MODEL = "llama-3.3-70b-versatile";
 
-// ============================
-// ROUTE PING
-// ============================
 app.get('/ping', (req, res) => {
     res.json({
         status: 'alive',
@@ -26,9 +22,6 @@ app.get('/ping', (req, res) => {
     });
 });
 
-// ============================
-// ROUTE TEST
-// ============================
 app.get('/', (req, res) => {
     res.json({
         status: 'ok',
@@ -37,9 +30,6 @@ app.get('/', (req, res) => {
     });
 });
 
-// ============================
-// GÉNÉRER DESCRIPTION
-// ============================
 app.post('/api/generer-description', async (req, res) => {
     try {
         const { article } = req.body;
@@ -51,16 +41,13 @@ app.post('/api/generer-description', async (req, res) => {
             messages: [
                 {
                     role: "system",
-                    content: `Tu es un assistant expert en facturation professionnelle.
-                    Tu génères des descriptions courtes et professionnelles
-                    pour des articles ou services sur des factures.
-                    Réponds TOUJOURS en français.
-                    La description doit faire maximum 2 phrases.
-                    Sois précis et professionnel.`
+                    content: `Tu es un assistant expert en facturation.
+                    Génère une description professionnelle courte
+                    maximum 2 phrases en français.`
                 },
                 {
                     role: "user",
-                    content: `Génère une description professionnelle pour : "${article}"`
+                    content: `Description pour : "${article}"`
                 }
             ],
             temperature: 0.7,
@@ -75,9 +62,6 @@ app.post('/api/generer-description', async (req, res) => {
     }
 });
 
-// ============================
-// SUGGÉRER PRIX
-// ============================
 app.post('/api/suggerer-prix', async (req, res) => {
     try {
         const { article, devise } = req.body;
@@ -89,9 +73,8 @@ app.post('/api/suggerer-prix', async (req, res) => {
             messages: [
                 {
                     role: "system",
-                    content: `Tu es un expert en tarification.
+                    content: `Expert en tarification.
                     Réponds UNIQUEMENT avec un nombre.
-                    Pas de texte, pas de symbole, juste le nombre.
                     Exemple : 150 ou 49.99`
                 },
                 {
@@ -114,9 +97,6 @@ app.post('/api/suggerer-prix', async (req, res) => {
     }
 });
 
-// ============================
-// ANALYSER FACTURE
-// ============================
 app.post('/api/analyser-facture', async (req, res) => {
     try {
         const completion = await groq.chat.completions.create({
@@ -124,9 +104,8 @@ app.post('/api/analyser-facture', async (req, res) => {
             messages: [
                 {
                     role: "system",
-                    content: `Tu es un expert comptable.
-                    Tu analyses des factures et donnes des conseils.
-                    Réponds en français. Sois concis.
+                    content: `Expert comptable.
+                    Analyse les factures en français.
                     Format :
                     ✅ Points positifs
                     ⚠️ Points à améliorer
@@ -134,7 +113,7 @@ app.post('/api/analyser-facture', async (req, res) => {
                 },
                 {
                     role: "user",
-                    content: `Analyse cette facture :
+                    content: `Analyse :
                     Client : ${req.body.client}
                     Articles : ${JSON.stringify(req.body.articles)}
                     Total : ${req.body.total}
@@ -154,9 +133,6 @@ app.post('/api/analyser-facture', async (req, res) => {
     }
 });
 
-// ============================
-// GÉNÉRER NOTES
-// ============================
 app.post('/api/generer-notes', async (req, res) => {
     try {
         const { client, total, devise } = req.body;
@@ -165,10 +141,9 @@ app.post('/api/generer-notes', async (req, res) => {
             messages: [
                 {
                     role: "system",
-                    content: `Tu génères des notes professionnelles
-                    pour des factures. Maximum 3 phrases.
-                    Inclus conditions de paiement et remerciements.
-                    Réponds en français.`
+                    content: `Génère des notes professionnelles
+                    pour factures. Maximum 3 phrases en français.
+                    Inclus conditions paiement et remerciements.`
                 },
                 {
                     role: "user",
@@ -188,9 +163,6 @@ app.post('/api/generer-notes', async (req, res) => {
     }
 });
 
-// ============================
-// CHATBOT
-// ============================
 app.post('/api/chat', async (req, res) => {
     try {
         const { message, historique } = req.body;
@@ -203,10 +175,9 @@ app.post('/api/chat', async (req, res) => {
             {
                 role: "system",
                 content: `Tu es l'assistant IA de Facture Pro.
-                Tu aides les utilisateurs à créer des factures
-                professionnelles.
+                Tu aides à créer des factures professionnelles.
                 Réponds TOUJOURS en français.
-                Sois amical, professionnel et concis.`
+                Sois amical et professionnel.`
             }
         ];
         if (historique && Array.isArray(historique)) {
@@ -233,15 +204,11 @@ app.post('/api/chat', async (req, res) => {
     }
 });
 
-// ============================
-// DÉMARRER SERVEUR
-// ============================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`✅ Serveur démarré sur le port ${PORT}`);
-    console.log(`🤖 Modèle IA : ${MODEL}`);
+    console.log(`🤖 Modèle : ${MODEL}`);
 
-    // Auto ping toutes les 14 minutes
     setInterval(() => {
         https.get(
             'https://facture-pro-backend.onrender.com/ping',
@@ -249,7 +216,7 @@ app.listen(PORT, () => {
                 console.log('✅ Auto-ping OK');
             }
         ).on('error', (e) => {
-            console.log('⚠️ Auto-ping échoué');
+            console.log('⚠️ Ping échoué');
         });
     }, 14 * 60 * 1000);
 });
